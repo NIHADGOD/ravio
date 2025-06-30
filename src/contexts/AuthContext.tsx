@@ -1,19 +1,27 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
-interface User {
+interface UserProfile {
   id: string;
   email: string;
-  name: string;
-  isAdmin?: boolean;
+  full_name: string | null;
+  role: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, name: string) => Promise<boolean>;
-  logout: () => void;
+  profile: UserProfile | null;
+  session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,87 +36,120 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for saved user on mount
-  useEffect(() => {
-    const savedUser = localStorage.getItem('ravio-user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+  // Fetch user profile
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setProfile(null);
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
+
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Save user to localStorage whenever user changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('ravio-user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('ravio-user');
-    }
-  }, [user]);
-
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      // Mock authentication - in real app, this would call your auth service
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-      // Demo users
-      if (email === 'admin@ravio.store' && password === 'admin123') {
-        setUser({
-          id: '1',
-          email: 'admin@ravio.store',
-          name: 'Admin User',
-          isAdmin: true
-        });
-        return true;
-      }
-      
-      if (email === 'user@example.com' && password === 'user123') {
-        setUser({
-          id: '2',
-          email: 'user@example.com',
-          name: 'John Doe'
-        });
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    }
-  };
-
-  const signup = async (email: string, password: string, name: string): Promise<boolean> => {
-    try {
-      // Mock signup - in real app, this would call your auth service
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-      setUser({
-        id: Date.now().toString(),
+      const { error } = await supabase.auth.signUp({
         email,
-        name
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
       });
-      return true;
+      return { error };
     } catch (error) {
-      console.error('Signup error:', error);
-      return false;
+      return { error };
     }
   };
 
-  const logout = () => {
-    setUser(null);
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   };
+
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const isAdmin = profile?.role === 'admin';
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        login,
-        signup,
-        logout,
+        profile,
+        session,
         loading,
+        isAdmin,
+        signUp,
+        signIn,
+        signOut,
+        signInWithGoogle,
       }}
     >
       {children}

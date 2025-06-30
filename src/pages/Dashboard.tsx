@@ -1,215 +1,214 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, ShoppingBag, Heart, Settings } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Package, ShoppingCart, User, Settings } from 'lucide-react';
+
+interface Order {
+  id: string;
+  order_status: string;
+  total_amount: number;
+  created_at: string;
+  tracking_number: string | null;
+  order_items: any;
+}
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, profile, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
+    if (!loading) {
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+      
+      // Redirect admins to admin panel
+      if (isAdmin) {
+        navigate('/admin');
+        return;
+      }
+      
+      fetchUserOrders();
     }
-  }, [user, navigate]);
+  }, [user, loading, isAdmin, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const fetchUserOrders = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setIsLoadingOrders(false);
+    }
   };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'shipped': return 'bg-purple-100 text-purple-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'refunded': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading || isLoadingOrders) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
   }
 
-  // Mock data for user dashboard
-  const recentOrders = [
-    {
-      id: 'ORD-001',
-      date: '2025-01-15',
-      items: 'Essential White Tee x1',
-      total: 49,
-      status: 'Delivered'
-    },
-    {
-      id: 'ORD-002',
-      date: '2025-01-10',
-      items: 'Premium Cotton Tee x2',
-      total: 118,
-      status: 'Shipped'
-    }
-  ];
-
-  const wishlistItems = [
-    {
-      id: '1',
-      name: 'Luxury Comfort',
-      price: 75,
-      image: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=300&q=80'
-    },
-    {
-      id: '2',
-      name: 'Organic Blend Tee',
-      price: 55,
-      image: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=300&q=80'
-    }
-  ];
-
   return (
-    <div className="pt-20 pb-20 md:pb-8">
+    <div className="pt-20 pb-8">
       <div className="container mx-auto px-4">
+        {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-4xl font-playfair font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {user.name}</p>
+          <h1 className="text-4xl font-playfair font-bold mb-2">Welcome back, {profile?.full_name || 'User'}</h1>
+          <p className="text-muted-foreground">Manage your orders and account settings</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Profile Card */}
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p><strong>Name:</strong> {user.name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                {user.isAdmin && (
-                  <p className="text-sm text-primary font-medium">Admin Account</p>
-                )}
-              </div>
-              <Button variant="outline" className="w-full mt-4">
-                <Settings className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Orders Summary */}
-          <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5" />
-                Orders
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold mb-2">{recentOrders.length}</div>
-              <p className="text-muted-foreground text-sm mb-4">Total orders placed</p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Delivered</span>
-                  <span>1</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Shipped</span>
-                  <span>1</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Wishlist Summary */}
-          <Card className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="h-5 w-5" />
-                Wishlist
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold mb-2">{wishlistItems.length}</div>
-              <p className="text-muted-foreground text-sm mb-4">Items saved</p>
-              <Button variant="outline" className="w-full">
-                View Wishlist
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Orders */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '300ms' }}>
-          <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{order.id}</p>
-                    <p className="text-sm text-muted-foreground">{order.items}</p>
-                    <p className="text-sm text-muted-foreground">{order.date}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold">${order.total}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Wishlist Items */}
-        <Card className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-          <CardHeader>
-            <CardTitle>Wishlist</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {wishlistItems.map((item) => (
-                <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-16 h-16 object-cover rounded-md"
-                  />
-                  <div className="flex-grow">
-                    <h4 className="font-medium">{item.name}</h4>
-                    <p className="text-sm text-muted-foreground">${item.price}</p>
-                    <Button size="sm" variant="outline" className="mt-2">
-                      Add to Cart
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Admin Panel Access */}
-        {user.isAdmin && (
-          <Card className="mt-6 animate-fade-in" style={{ animationDelay: '500ms' }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold">Admin Panel</h3>
-                  <p className="text-sm text-muted-foreground">Manage products, orders, and users</p>
+                  <p className="text-sm text-muted-foreground">Total Orders</p>
+                  <p className="text-3xl font-bold">{orders.length}</p>
                 </div>
-                <Button onClick={() => navigate('/admin')}>
-                  Access Admin Panel
-                </Button>
+                <ShoppingCart className="h-8 w-8 text-primary" />
               </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* Logout */}
-        <div className="text-center mt-8">
-          <Button variant="outline" onClick={handleLogout}>
-            Sign Out
-          </Button>
+          <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Spent</p>
+                  <p className="text-3xl font-bold">
+                    ${orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)}
+                  </p>
+                </div>
+                <Package className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="animate-fade-in" style={{ animationDelay: '200ms' }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Account Status</p>
+                  <p className="text-3xl font-bold capitalize">{profile?.role || 'User'}</p>
+                </div>
+                <User className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Orders Section */}
+        <Card className="animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Your Orders</span>
+              <Button variant="outline" onClick={() => navigate('/shop')}>
+                Continue Shopping
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {orders.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
+                <p className="text-muted-foreground mb-4">Start shopping to see your orders here</p>
+                <Button onClick={() => navigate('/shop')}>Browse Products</Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h4 className="font-semibold">Order #{order.id.slice(0, 8).toUpperCase()}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </p>
+                      {order.tracking_number && (
+                        <p className="text-sm text-muted-foreground">
+                          Tracking: {order.tracking_number}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">${Number(order.total_amount).toFixed(2)}</p>
+                      <Badge className={`mt-2 ${getStatusColor(order.order_status)}`}>
+                        {order.order_status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Account Info */}
+        <Card className="mt-6 animate-fade-in" style={{ animationDelay: '400ms' }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Account Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                <p className="text-lg">{profile?.full_name || 'Not provided'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Email</label>
+                <p className="text-lg">{profile?.email}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Member Since</label>
+                <p className="text-lg">
+                  {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Unknown'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

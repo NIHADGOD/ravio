@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Search, ShoppingBag, User, LogOut } from 'lucide-react';
+import { Search, ShoppingBag, User, LogOut, Menu, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import {
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { getTotalItems } = useCart();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -32,6 +33,14 @@ const Header: React.FC = () => {
     logout();
     navigate('/');
   };
+
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'Shop', path: '/shop' },
+    { name: 'Drops', path: '/drops' },
+    { name: 'Lookbook', path: '/lookbook' },
+    { name: 'Contact', path: '/contact' },
+  ];
 
   return (
     <header 
@@ -53,13 +62,25 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="nav-link">Home</Link>
-            <Link to="/shop" className="nav-link">Shop</Link>
-            <Link to="/contact" className="nav-link">Contact</Link>
+            {navLinks.map((link) => (
+              <Link key={link.name} to={link.path} className="nav-link">
+                {link.name}
+              </Link>
+            ))}
           </nav>
 
           {/* Right Actions */}
           <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Mobile Menu Toggle */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="md:hidden"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+
             {/* Search - Desktop only */}
             <Button variant="ghost" size="sm" className="hidden md:flex">
               <Search className="h-5 w-5" />
@@ -107,13 +128,42 @@ const Header: React.FC = () => {
               </DropdownMenu>
             ) : (
               <Link to="/login">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="hidden md:flex">
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
             )}
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-t shadow-lg">
+            <nav className="container mx-auto px-4 py-4">
+              <div className="flex flex-col space-y-4">
+                {navLinks.map((link) => (
+                  <Link 
+                    key={link.name} 
+                    to={link.path} 
+                    className="text-lg font-medium hover:text-muted-foreground transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                {!user && (
+                  <Link 
+                    to="/login" 
+                    className="text-lg font-medium hover:text-muted-foreground transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                )}
+              </div>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

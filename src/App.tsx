@@ -20,6 +20,8 @@ import Shipping from "@/pages/Shipping";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Admin from "@/pages/Admin";
+import Drops from "@/pages/Drops";
+import Lookbook from "@/pages/Lookbook";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +49,8 @@ const App = () => (
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/drops" element={<Drops />} />
+                <Route path="/lookbook" element={<Lookbook />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

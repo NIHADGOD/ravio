@@ -60,7 +60,7 @@
   }
 
   .product-card {
-    @apply group cursor-pointer transition-all duration-300 ease-out hover:shadow-lg;
+    @apply cursor-pointer transition-all duration-300 ease-out hover:shadow-lg;
   }
 
   .product-image {

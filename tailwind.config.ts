@@ -21,7 +21,8 @@ export default {
 		extend: {
 			fontFamily: {
 				'playfair': ['Playfair Display', 'serif'],
-				'inter': ['Inter', 'sans-serif'],
+				'inter': ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+				'sans': ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -79,13 +80,27 @@ export default {
 				'zoom-in': {
 					'0%': { transform: 'scale(0.95)', opacity: '0' },
 					'100%': { transform: 'scale(1)', opacity: '1' }
+				},
+				'pulse-subtle': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.8' }
 				}
 			},
 			animation: {
 				'fade-in': 'fade-in 0.6s ease-out',
 				'fade-in-up': 'fade-in-up 0.8s ease-out',
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
-				'zoom-in': 'zoom-in 0.4s ease-out'
+				'zoom-in': 'zoom-in 0.4s ease-out',
+				'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite'
+			},
+			spacing: {
+				'18': '4.5rem',
+				'88': '22rem',
+			},
+			boxShadow: {
+				'soft': '0 2px 8px 0 rgba(0, 0, 0, 0.08)',
+				'medium': '0 4px 12px 0 rgba(0, 0, 0, 0.12)',
+				'strong': '0 8px 24px 0 rgba(0, 0, 0, 0.16)',
 			}
 		}
 	},

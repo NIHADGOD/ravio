@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Package, Users, ShoppingCart, DollarSign, Edit, Trash2, Plus, Upload, Settings, Eye, EyeOff } from 'lucide-react';
+import { Package, Users, ShoppingCart, DollarSign, Edit, Trash2, Plus, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminLayout from '@/components/AdminLayout';
+import StatsCard from '@/components/admin/StatsCard';
+import CollapsibleSection from '@/components/admin/CollapsibleSection';
+import LoadingSpinner from '@/components/admin/LoadingSpinner';
 
 interface Product {
   id: string;
@@ -294,28 +294,36 @@ const Admin: React.FC = () => {
 
   if (loading || isLoadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-lg">Loading admin panel...</p>
+      <AdminLayout title="Loading..." subtitle="Please wait while we load your data">
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <LoadingSpinner size="lg" className="mx-auto mb-4" />
+            <p className="text-gray-600">Loading your admin dashboard...</p>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
   if (!user || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
-          <Button onClick={() => navigate('/')}>Go Home</Button>
+      <AdminLayout title="Access Denied" subtitle="You don't have permission to view this page">
+        <div className="text-center py-20">
+          <div className="bg-red-50 rounded-xl p-8 max-w-md mx-auto">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-red-600 text-2xl">🚫</span>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Restricted</h2>
+            <p className="text-gray-600 mb-6">Only administrators can access this area.</p>
+            <Button onClick={() => navigate('/')} className="rounded-lg">
+              Return to Homepage
+            </Button>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
-  // Analytics data
   const analyticsData = [
     { name: 'Mon', orders: orders.filter(o => new Date(o.created_at).getDay() === 1).length, revenue: orders.filter(o => new Date(o.created_at).getDay() === 1).reduce((sum, o) => sum + Number(o.total_amount), 0) },
     { name: 'Tue', orders: orders.filter(o => new Date(o.created_at).getDay() === 2).length, revenue: orders.filter(o => new Date(o.created_at).getDay() === 2).reduce((sum, o) => sum + Number(o.total_amount), 0) },
@@ -327,514 +335,271 @@ const Admin: React.FC = () => {
   ];
 
   return (
-    <div className="pt-20 pb-8">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-4xl font-playfair font-bold mb-2">RAVIO Admin Panel</h1>
-          <p className="text-muted-foreground">Welcome back, {profile?.full_name || profile?.email}</p>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="animate-fade-in">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Products</p>
-                  <p className="text-3xl font-bold">{products.length}</p>
-                </div>
-                <Package className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Orders</p>
-                  <p className="text-3xl font-bold">{orders.length}</p>
-                </div>
-                <ShoppingCart className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Users</p>
-                  <p className="text-3xl font-bold">{users.length}</p>
-                </div>
-                <Users className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Revenue</p>
-                  <p className="text-3xl font-bold">${orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <Tabs defaultValue="dashboard" className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-
-          {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Weekly Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analyticsData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="orders" fill="#1f2937" name="Orders" />
-                      <Bar dataKey="revenue" fill="#6b7280" name="Revenue ($)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Orders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {orders.slice(0, 5).map((order) => (
-                      <div key={order.id} className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">{order.id.slice(0, 8)}...</p>
-                          <p className="text-sm text-muted-foreground">{order.user_email}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold">${Number(order.total_amount).toFixed(2)}</p>
-                          <Badge className={`text-xs ${getStatusColor(order.order_status)}`}>
-                            {order.order_status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Users</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {users.slice(0, 5).map((user) => (
-                      <div key={user.id} className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">{user.full_name || 'No name'}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                        <Badge variant="outline">{user.role}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Products Tab */}
-          <TabsContent value="products" className="space-y-6">
-            {/* Add Product Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Add New Product
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Product Name</Label>
-                    <Input
-                      id="name"
-                      value={newProduct.name}
-                      onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="original_price">Original Price ($)</Label>
-                    <Input
-                      id="original_price"
-                      type="number"
-                      step="0.01"
-                      value={newProduct.original_price}
-                      onChange={(e) => setNewProduct({...newProduct, original_price: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="sale_price">Sale Price ($)</Label>
-                    <Input
-                      id="sale_price"
-                      type="number"
-                      step="0.01"
-                      value={newProduct.sale_price}
-                      onChange={(e) => setNewProduct({...newProduct, sale_price: e.target.value})}
-                      placeholder="Optional"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="shipping_cost">Shipping Cost ($)</Label>
-                    <Input
-                      id="shipping_cost"
-                      type="number"
-                      step="0.01"
-                      value={newProduct.shipping_cost}
-                      onChange={(e) => setNewProduct({...newProduct, shipping_cost: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Select
-                      value={newProduct.category}
-                      onValueChange={(value) => setNewProduct({...newProduct, category: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="essentials">Essentials</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
-                        <SelectItem value="organic">Organic</SelectItem>
-                        <SelectItem value="drop">Drop Collection</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="stock">Stock Quantity</Label>
-                    <Input
-                      id="stock"
-                      type="number"
-                      value={newProduct.stock_quantity}
-                      onChange={(e) => setNewProduct({...newProduct, stock_quantity: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={newProduct.description}
-                      onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="images">Image URLs (one per line)</Label>
-                    <Textarea
-                      id="images"
-                      placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                      value={newProduct.images.join('\n')}
-                      onChange={(e) => setNewProduct({...newProduct, images: e.target.value.split('\n').filter(url => url.trim())})}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Button type="submit" className="w-full">Add Product</Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Products List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Products ({products.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {products.map((product) => (
-                    <div key={product.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                      {product.images[0] && (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-16 h-16 object-cover rounded-md"
-                        />
-                      )}
-                      <div className="flex-grow">
-                        <h4 className="font-semibold">{product.name}</h4>
-                        <p className="text-sm text-muted-foreground capitalize">{product.category}</p>
-                        <p className="font-bold">
-                          ${product.sale_price ? product.sale_price : product.original_price}
-                          {product.sale_price && (
-                            <span className="ml-2 text-sm text-muted-foreground line-through">
-                              ${product.original_price}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Stock: {product.stock_quantity}</p>
-                        <div className="flex gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => toggleProductVisibility(product.id, product.is_active)}
-                          >
-                            {product.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleDeleteProduct(product.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders">
-            <Card>
-              <CardHeader>
-                <CardTitle>Orders ({orders.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-semibold">{order.id.slice(0, 8)}...</h4>
-                        <p className="text-sm text-muted-foreground">{order.user_email}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </p>
-                        {order.tracking_number && (
-                          <p className="text-sm text-muted-foreground">
-                            Tracking: {order.tracking_number}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">${Number(order.total_amount).toFixed(2)}</p>
-                        <Badge className={`mt-2 ${getStatusColor(order.order_status)}`}>
-                          {order.order_status}
-                        </Badge>
-                        <div className="mt-2">
-                          <Select
-                            value={order.order_status}
-                            onValueChange={(value) => handleUpdateOrderStatus(order.id, value)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="processing">Processing</SelectItem>
-                              <SelectItem value="shipped">Shipped</SelectItem>
-                              <SelectItem value="delivered">Delivered</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                              <SelectItem value="refunded">Refunded</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Users Tab */}
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>Users ({users.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-semibold">{user.full_name || 'No name'}</h4>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Joined: {new Date(user.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="outline" className="mb-2">{user.role}</Badge>
-                        <div>
-                          <Select
-                            value={user.role}
-                            onValueChange={(value) => handleUpdateUserRole(user.id, value)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="editor">Editor</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Content Tab */}
-          <TabsContent value="content">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Website Content</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Site Logo URL</Label>
-                      <Input 
-                        placeholder="https://example.com/logo.png"
-                        value={websiteSettings.site_logo?.url || ''}
-                      />
-                    </div>
-                    <div>
-                      <Label>Hero Banner Title</Label>
-                      <Input 
-                        placeholder="Crafted in Clarity"
-                        value={websiteSettings.hero_banner?.title || ''}
-                      />
-                    </div>
-                    <div>
-                      <Label>Hero Banner Subtitle</Label>
-                      <Input 
-                        placeholder="Discover our latest collection"
-                        value={websiteSettings.hero_banner?.subtitle || ''}
-                      />
-                    </div>
-                    <div>
-                      <Label>Contact Email</Label>
-                      <Input 
-                        placeholder="hello@ravio.store"
-                        value={websiteSettings.contact_info?.email || ''}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Newsletter Subscriptions ({newsletters.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {newsletters.map((sub) => (
-                      <div key={sub.id} className="flex justify-between items-center p-2 border rounded">
-                        <span>{sub.email}</span>
-                        <Badge variant={sub.is_active ? "default" : "secondary"}>
-                          {sub.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Website Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Social Media Links</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label>Instagram URL</Label>
-                        <Input placeholder="https://instagram.com/ravio" />
-                      </div>
-                      <div>
-                        <Label>Threads URL</Label>
-                        <Input placeholder="https://threads.net/@ravio" />
-                      </div>
-                      <div>
-                        <Label>Pinterest URL</Label>
-                        <Input placeholder="https://pinterest.com/ravio" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Collection Visibility</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span>Drop 01 Collection</span>
-                        <Button variant="outline" size="sm">Toggle</Button>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Drop 02 Collection</span>
-                        <Button variant="outline" size="sm">Toggle</Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button className="w-full">Save Settings</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+    <AdminLayout 
+      title="Welcome back!" 
+      subtitle={`Good to see you, ${profile?.full_name || profile?.email}. Here's what's happening with RAVIO today.`}
+    >
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <StatsCard
+          title="Total Products"
+          value={products.length}
+          icon={Package}
+          color="blue"
+          trend={{ value: 12, isPositive: true }}
+        />
+        <StatsCard
+          title="Total Orders"
+          value={orders.length}
+          icon={ShoppingCart}
+          color="green"
+          trend={{ value: 8, isPositive: true }}
+        />
+        <StatsCard
+          title="Total Users"
+          value={users.length}
+          icon={Users}
+          color="purple"
+          trend={{ value: 23, isPositive: true }}
+        />
+        <StatsCard
+          title="Total Revenue"
+          value={`$${orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)}`}
+          icon={DollarSign}
+          color="orange"
+          trend={{ value: 15, isPositive: true }}
+        />
       </div>
-    </div>
+
+      {/* Analytics Chart */}
+      <div className="mb-8">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Weekly Performance</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analyticsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="name" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }} 
+                />
+                <Bar dataKey="orders" fill="#1f2937" name="Orders" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="#6b7280" name="Revenue ($)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions & Recent Activity */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+        {/* Recent Orders */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Recent Orders</h3>
+            <Button variant="outline" size="sm" className="rounded-lg">
+              View All
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {orders.slice(0, 5).map((order) => (
+              <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-900">Order #{order.id.slice(0, 8)}</p>
+                  <p className="text-sm text-gray-500">{order.user_email}</p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(order.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-gray-900">${Number(order.total_amount).toFixed(2)}</p>
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    order.order_status === 'delivered' ? 'bg-green-100 text-green-800' :
+                    order.order_status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                    order.order_status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {order.order_status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Users */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">New Users</h3>
+            <Button variant="outline" size="sm" className="rounded-lg">
+              View All
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {users.slice(0, 5).map((user) => (
+              <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600">
+                      {(user.full_name || user.email).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{user.full_name || 'No name'}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                  user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {user.role}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Add Product */}
+      <CollapsibleSection title="✨ Add New Product" defaultOpen={false}>
+        <form onSubmit={handleAddProduct} className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="name" className="text-sm font-medium text-gray-700 mb-2 block">
+                Product Name *
+              </Label>
+              <Input
+                id="name"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                placeholder="Enter product name"
+                className="rounded-lg border-gray-200 focus:border-black focus:ring-black"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="category" className="text-sm font-medium text-gray-700 mb-2 block">
+                Category
+              </Label>
+              <Select
+                value={newProduct.category}
+                onValueChange={(value) => setNewProduct({...newProduct, category: value})}
+              >
+                <SelectTrigger className="rounded-lg border-gray-200 focus:border-black focus:ring-black">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  <SelectItem value="essentials">Essentials</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                  <SelectItem value="organic">Organic</SelectItem>
+                  <SelectItem value="drop">Drop Collection</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="original_price" className="text-sm font-medium text-gray-700 mb-2 block">
+                Original Price ($) *
+              </Label>
+              <Input
+                id="original_price"
+                type="number"
+                step="0.01"
+                value={newProduct.original_price}
+                onChange={(e) => setNewProduct({...newProduct, original_price: e.target.value})}
+                placeholder="0.00"
+                className="rounded-lg border-gray-200 focus:border-black focus:ring-black"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="sale_price" className="text-sm font-medium text-gray-700 mb-2 block">
+                Sale Price ($)
+              </Label>
+              <Input
+                id="sale_price"
+                type="number"
+                step="0.01"
+                value={newProduct.sale_price}
+                onChange={(e) => setNewProduct({...newProduct, sale_price: e.target.value})}
+                placeholder="Optional sale price"
+                className="rounded-lg border-gray-200 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <Label htmlFor="shipping_cost" className="text-sm font-medium text-gray-700 mb-2 block">
+                Shipping Cost ($)
+              </Label>
+              <Input
+                id="shipping_cost"
+                type="number"
+                step="0.01"
+                value={newProduct.shipping_cost}
+                onChange={(e) => setNewProduct({...newProduct, shipping_cost: e.target.value})}
+                placeholder="0.00"
+                className="rounded-lg border-gray-200 focus:border-black focus:ring-black"
+              />
+            </div>
+            <div>
+              <Label htmlFor="stock" className="text-sm font-medium text-gray-700 mb-2 block">
+                Stock Quantity *
+              </Label>
+              <Input
+                id="stock"
+                type="number"
+                value={newProduct.stock_quantity}
+                onChange={(e) => setNewProduct({...newProduct, stock_quantity: e.target.value})}
+                placeholder="0"
+                className="rounded-lg border-gray-200 focus:border-black focus:ring-black"
+                required
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700 mb-2 block">
+              Product Description
+            </Label>
+            <Textarea
+              id="description"
+              value={newProduct.description}
+              onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+              placeholder="Describe your product..."
+              rows={4}
+              className="rounded-lg border-gray-200 focus:border-black focus:ring-black"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="images" className="text-sm font-medium text-gray-700 mb-2 block">
+              Product Images
+            </Label>
+            <Textarea
+              id="images"
+              placeholder="Enter image URLs, one per line&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+              value={newProduct.images.join('\n')}
+              onChange={(e) => setNewProduct({...newProduct, images: e.target.value.split('\n').filter(url => url.trim())})}
+              rows={4}
+              className="rounded-lg border-gray-200 focus:border-black focus:ring-black"
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full rounded-lg bg-black hover:bg-gray-800 text-white py-3 font-medium"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </Button>
+        </form>
+      </CollapsibleSection>
+    </AdminLayout>
   );
 };
 
